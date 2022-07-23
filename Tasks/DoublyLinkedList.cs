@@ -11,21 +11,18 @@ namespace Tasks
         private int _length;
         public int Length => _length;
 
-        //Insert at the front
         public void Add(T e)
         {
             var node = new Node<T>(e);
-            var lastNode = Head;
-            node.Next = null;
             _length++;
 
             if (Head == null)
             {
-                node.Prev = null;
                 Head = node;
                 return;
             }
 
+            var lastNode = Head;
             while (lastNode.Next != null)
                 lastNode = lastNode.Next;
 
@@ -48,18 +45,45 @@ namespace Tasks
             
             var nodeAtIndexPrev = nodeAtIndex.Prev;
             if (nodeAtIndexPrev != null)
-            {
-                nodeAtIndexPrev.Next = node;
-                node.Prev = nodeAtIndexPrev;
-            }
+                AddAfter(nodeAtIndexPrev, node);
             else
                 Head = node;
 
-            nodeAtIndex.Prev = node;
-            node.Next = nodeAtIndex;
-
+            AddBefore(nodeAtIndex, node);
             _length++;
         }
+        #region Aux Methods
+        private void AddAfter(Node<T> existingNode, Node<T> node)
+        {
+            existingNode.Next = node;
+            node.Prev = existingNode;
+        }
+        private void AddBefore(Node<T> existingNode, Node<T> node)
+        {
+            existingNode.Prev = node;
+            node.Next = existingNode;
+        }
+        private void RemoveNode(Node<T> node)
+        {
+            if (node == null)
+                return;
+
+            var nodeNext = node.Next;
+            var nodePrev = node.Prev;
+
+            if (nodePrev == null)
+            {
+                Head = nodeNext;
+                Head.Prev = null;
+            }
+            else
+                nodePrev.Next = nodeNext;
+
+            if (nodeNext != null)
+                nodeNext.Prev = nodePrev;
+            _length--;
+        }
+        #endregion
 
         public T ElementAt(int index)
         {
@@ -90,22 +114,7 @@ namespace Tasks
                     break;
                 }
             }
-
-            if (node == null)
-                return;
-
-            if (node.Prev == null)
-            {
-                Head = node.Next;
-                Head.Prev = null;
-            }
-            else
-                node.Prev.Next = node.Next;
-
-            if (node.Next != null)
-                node.Next.Prev = node.Prev;
-
-            _length--;
+            RemoveNode(node);
         }
 
         public T RemoveAt(int index)
@@ -117,15 +126,7 @@ namespace Tasks
             for (int i = 0; i < index; i++)
                 nodeAtIndex = nodeAtIndex.Next;
 
-            if (nodeAtIndex.Prev != null)
-                nodeAtIndex.Prev.Next = nodeAtIndex.Next;
-            else
-                Head = nodeAtIndex.Next;
-
-            if (nodeAtIndex.Next != null)
-                nodeAtIndex.Next.Prev = nodeAtIndex.Prev;
-
-            _length--;
+            RemoveNode(nodeAtIndex);
             return nodeAtIndex.Data;
         }
 
@@ -138,28 +139,19 @@ namespace Tasks
     {
         private Node<T> _startingNode;//указатель на -1 элемент
         private Node<T> _head;
-
         public DoublyLinkedListEnumerator(Node<T> head)  
         {
-            _startingNode = new Node<T>(head.Data);
-            _startingNode.Next = head;
+            _startingNode = new Node<T>() { Next = head };
             _head = _startingNode;
         }
-
         public Node<T> CurrentNode => _head;
         public T Current => _head.Data;
-
         object IEnumerator.Current => Current;
-
-        public void Dispose()
-        {
-        }
 
         public bool MoveNext()
         {
-            var canMoveNext = _head.Next != null;
+            bool canMoveNext = _head.Next != null;
             _head = _head.Next;
-
             return canMoveNext;
         }
 
@@ -167,13 +159,15 @@ namespace Tasks
         {
             _head = _startingNode;
         }
+        public void Dispose() { }
     }
     public class Node<T>
     {
         public T Data { get; set; }
         public Node<T> Prev { get; set; }
         public Node<T> Next { get; set; }
-        public Node(T d) 
+        public Node() { }
+        public Node(T d) : this() 
         { 
             Data = d; 
         }
